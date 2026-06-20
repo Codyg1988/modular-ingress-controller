@@ -26,7 +26,7 @@ class StandaloneFiltrationSystem:
         packet_id = raw_data.get("id", "UNKNOWN_ID")
         content = raw_data.get("content", "")
 
-       # 1. Evaluate Circuit Breaker Status
+        # 1. Evaluate Circuit Breaker Status
         if self.circuit_state == "OPEN":
             if time.time() - self.last_state_change > self.recovery_timeout:
                 print("⏳ Circuit breaker timeout expired. Moving to HALF-OPEN to test downstream health...")
@@ -35,7 +35,7 @@ class StandaloneFiltrationSystem:
             else:
                 print("🚨 Circuit Breaker is OPEN. Network routing blocked to protect system stability.")
                 return {"id": packet_id, "status": "CIRCUIT_BLOCKED", "reason": "Downstream system offline."}
-                
+
         # 2. Structural Anomaly Isolation (State Checks)
         if not content or str(content).isspace():
             return {"id": packet_id, "status": "VOID_PURGE", "payload": None}
@@ -61,7 +61,6 @@ class StandaloneFiltrationSystem:
             try:
                 async with session.post(self.target_routing_url, json=payload) as response:
                     if response.status == 200:
-                        # Success: Reset circuit stats if we were testing it
                         if self.circuit_state in ["HALF-OPEN", "OPEN"]:
                             print("🟢 Downstream connection recovered! Closing circuit breaker.")
                         self.circuit_state = "CLOSED"
@@ -83,7 +82,6 @@ class StandaloneFiltrationSystem:
                     return False
                 
                 if attempt < max_retries:
-                    # Exponential Backoff Formula: base_delay * (2 ^ attempt)
                     delay = base_delay * (2 ** attempt)
                     print(f"🔄 Backing off execution. Retrying in {delay} seconds...")
                     await asyncio.sleep(delay)
